@@ -1,64 +1,196 @@
+// list/list.c
+// Implementation of linked list
+// <Author>
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "list.h"
 
-
-typedef struct Node {
-    int data;
-    struct Node* next;
-} Node;
-
-
-Node* createNode(int data) {
-    Node* newNode = (Node*)malloc(sizeof(Node));
-    if (newNode == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        exit(1);
-    }
-    newNode->data = data;
-    newNode->next = NULL;
-    return newNode;
+// Allocate a new list (heap-allocated)
+list_t *list_alloc() {
+    list_t *l = (list_t *)malloc(sizeof(list_t));
+    l->head = NULL;
+    return l;
 }
 
-// Function to insert a node at the beginning of the list
-void insertAtBeginning(Node** head, int data) {
-    Node* newNode = createNode(data);
-    newNode->next = *head;
-    *head = newNode;
-}
-
-// Function to delete a node from the list
-void deleteNode(Node** head, int key) {
-    Node* temp = *head;
-    Node* prev = NULL;
-
-    // If the head node itself holds the key to be deleted
-    if (temp != NULL && temp->data == key) {
-        *head = temp->next;
+// Free all nodes and the list itself
+void list_free(list_t *l) {
+    node_t *curr = l->head;
+    while (curr != NULL) {
+        node_t *temp = curr;
+        curr = curr->next;
         free(temp);
+    }
+    free(l);
+}
+
+// Print the list elements
+void list_print(list_t *l) {
+    node_t *curr = l->head;
+    printf("[");
+    while (curr != NULL) {
+        printf("%d", curr->value);
+        if (curr->next != NULL) printf(" -> ");
+        curr = curr->next;
+    }
+    printf("]\n");
+}
+
+// Convert list to a string (caller must free)
+char* listToString(list_t *l) {
+    static char buffer[1024]; // simple static buffer for now
+    buffer[0] = '\0';
+    node_t *curr = l->head;
+    while (curr != NULL) {
+        char temp[32];
+        sprintf(temp, "%d ", curr->value);
+        strcat(buffer, temp);
+        curr = curr->next;
+    }
+    return buffer;
+}
+
+// Helper to get a new node (heap allocated)
+node_t * getNode(elem value) {
+    node_t *n = (node_t *)malloc(sizeof(node_t));
+    n->value = value;
+    n->next = NULL;
+    return n;
+}
+
+// Return length of the list
+int list_length(list_t *l) {
+    int count = 0;
+    node_t *curr = l->head;
+    while (curr != NULL) {
+        count++;
+        curr = curr->next;
+    }
+    return count;
+}
+
+// Add value to back
+void list_add_to_back(list_t *l, elem value) {
+    node_t *n = getNode(value);
+    if (l->head == NULL) {
+        l->head = n;
         return;
     }
-
-    // Search for the key to be deleted
-    while (temp != NULL && temp->data != key) {
-        prev = temp;
-        temp = temp->next;
+    node_t *curr = l->head;
+    while (curr->next != NULL) {
+        curr = curr->next;
     }
-
-    
-    if (temp == NULL) return;
-
-    // Unlink the node from the list
-    prev->next = temp->next;
-    free(temp);
+    curr->next = n;
 }
 
-// Function to print the linked list
-void printList(Node* head) {
-    Node* temp = head;
-    while (temp != NULL) {
-        printf("%d -> ", temp->data);
-        temp = temp->next;
+// Add value to front
+void list_add_to_front(list_t *l, elem value) {
+    node_t *n = getNode(value);
+    n->next = l->head;
+    l->head = n;
+}
+
+// Add value at specific index (1-based index)
+void list_add_at_index(list_t *l, elem value, int index) {
+    if (index <= 1) {
+        list_add_to_front(l, value);
+        return;
     }
-    printf("NULL\n");
+    int pos = 1;
+    node_t *curr = l->head;
+    while (curr != NULL && pos < index - 1) {
+        curr = curr->next;
+        pos++;
+    }
+    if (curr == NULL) {
+        list_add_to_back(l, value);
+        return;
+    }
+    node_t *n = getNode(value);
+    n->next = curr->next;
+    curr->next = n;
+}
+
+// Remove from back
+elem list_remove_from_back(list_t *l) {
+    if (l->head == NULL) return -1;
+    if (l->head->next == NULL) {
+        elem val = l->head->value;
+        free(l->head);
+        l->head = NULL;
+        return val;
+    }
+    node_t *curr = l->head;
+    while (curr->next->next != NULL) {
+        curr = curr->next;
+    }
+    elem val = curr->next->value;
+    free(curr->next);
+    curr->next = NULL;
+    return val;
+}
+
+// Remove from front
+elem list_remove_from_front(list_t *l) {
+    if (l->head == NULL) return -1;
+    node_t *temp = l->head;
+    elem val = temp->value;
+    l->head = l->head->next;
+    free(temp);
+    return val;
+}
+
+// Remove at index (1-based index)
+elem list_remove_at_index(list_t *l, int index) {
+    if (l->head == NULL) return -1;
+    if (index <= 1) {
+        return list_remove_from_front(l);
+    }
+    node_t *curr = l->head;
+    int pos = 1;
+    while (curr->next != NULL && pos < index - 1) {
+        curr = curr->next;
+        pos++;
+    }
+    if (curr->next == NULL) return -1;
+    node_t *temp = curr->next;
+    elem val = temp->value;
+    curr->next = temp->next;
+    free(temp);
+    return val;
+}
+
+// Check if element exists
+bool list_is_in(list_t *l, elem value) {
+    node_t *curr = l->head;
+    while (curr != NULL) {
+        if (curr->value == value) return true;
+        curr = curr->next;
+    }
+    return false;
+}
+
+// Get element at index (1-based index)
+elem list_get_elem_at(list_t *l, int index) {
+    int pos = 1;
+    node_t *curr = l->head;
+    while (curr != NULL) {
+        if (pos == index) return curr->value;
+        curr = curr->next;
+        pos++;
+    }
+    return -1; // not found
+}
+
+// Get index of element (1-based index)
+int list_get_index_of(list_t *l, elem value) {
+    int pos = 1;
+    node_t *curr = l->head;
+    while (curr != NULL) {
+        if (curr->value == value) return pos;
+        curr = curr->next;
+        pos++;
+    }
+    return -1;
 }
