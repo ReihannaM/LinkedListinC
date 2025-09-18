@@ -1,16 +1,21 @@
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -Wextra -g
 
-all: list
+SRC = list.c main.c
+OBJ = $(SRC:.c=.o)
 
-list: main.o list.o
-	$(CC) $(CFLAGS) -o list main.o list.o
+TARGET = list
 
-main.o: main.c list.h
-	$(CC) $(CFLAGS) -c main.c
+all: $(TARGET)
 
-list.o: list.c list.h
-	$(CC) $(CFLAGS) -c list.c
+$(TARGET): $(OBJ)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+run: $(TARGET)
+	./$(TARGET)
 
 clean:
-	rm -f *.o list
+	rm -f $(OBJ) $(TARGET)
