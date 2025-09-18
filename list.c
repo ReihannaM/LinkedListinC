@@ -1,139 +1,64 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "list.h"
 
-struct list* list_create();
-void list_free(struct list* list);
-void list_insert(struct list* list, void* val);
-void list_remove(struct list* list, void* val, int (*cmp)(void* a, void* b));
-int list_position(struct list* list, void* val, int (*cmp)(void* a, void* b));
-void list_reverse(struct list* list);
 
-struct link
-{
-    void* val;
-    struct link* next;
-};
+typedef struct Node {
+    int data;
+    struct Node* next;
+} Node;
 
-struct list
-{
-    struct link* head;
-};
 
-struct list* list_create()
-{
-    struct list *list=(struct list *)malloc(sizeof(struct list));
-    list->head=NULL;
-    return list;
-}
-
-void list_free(struct list* list)
-{
-    struct link *link=list->head;
-    while(link)
-    {
-        struct link *next=link->next;
-        free(link);
-        link=next;
+Node* createNode(int data) {
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    if (newNode == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
     }
-    list->head=NULL;
+    newNode->data = data;
+    newNode->next = NULL;
+    return newNode;
 }
 
-void list_insert(struct list* list, void* val)
-{
-    struct link *new_node=(struct link *)malloc(sizeof(struct link));
-    new_node->val=val;
-    new_node->next=list->head;
-    list->head=new_node;
+// Function to insert a node at the beginning of the list
+void insertAtBeginning(Node** head, int data) {
+    Node* newNode = createNode(data);
+    newNode->next = *head;
+    *head = newNode;
 }
 
-void list_remove(struct list* list, void* val, int (*cmp)(void* a, void* b))
-{
-    struct link *link=list->head;
-    struct link *prev=NULL;
-    while(link)
-    {
-        if(*(int *)(link->val)==*(int *)(val))
-        {
-            break;
-        }
-        prev=link;
-        link=link->next;
-    }
-    if(!link)
-    {
+// Function to delete a node from the list
+void deleteNode(Node** head, int key) {
+    Node* temp = *head;
+    Node* prev = NULL;
+
+    // If the head node itself holds the key to be deleted
+    if (temp != NULL && temp->data == key) {
+        *head = temp->next;
+        free(temp);
         return;
     }
-    if(!prev)
-    {
-        list->head=list->head->next;
+
+    // Search for the key to be deleted
+    while (temp != NULL && temp->data != key) {
+        prev = temp;
+        temp = temp->next;
     }
-    else
-    {
-        prev->next=link->next;
-        free(link);
-    }
+
+    
+    if (temp == NULL) return;
+
+    // Unlink the node from the list
+    prev->next = temp->next;
+    free(temp);
 }
 
-int list_position(struct list* list, void* val, int (*cmp)(void* a, void* b))
-{
-    int index=0;
-    for(struct link *link=list->head;link;link=link->next)
-    {
-        if(*(int *)(link->val)==*(int *)(val))
-        {
-            return index;
-        }
-        index++;
+// Function to print the linked list
+void printList(Node* head) {
+    Node* temp = head;
+    while (temp != NULL) {
+        printf("%d -> ", temp->data);
+        temp = temp->next;
     }
-    return -1;
-}
-
-void list_reverse(struct list* list)
-{
-    struct link *prev=NULL;
-    struct link *curr=list->head;
-    struct link *next=NULL;
-    while(curr)
-    {
-        next=curr->next;
-        curr->next=prev;
-        prev=curr;
-        curr=next;
-    }
-    list->head=prev;
-}
-
-// function that prints the list
-void print_list(struct list *list)
-{
-    if(!list)
-    {
-        return;
-    }
-    printf("List: ");
-    if(!list->head)
-    {
-        printf("Empty\n");
-        return;
-    }
-    for(struct link *link=list->head;link;link=link->next)
-    {
-        printf("%d ",*(int *)(link->val));
-    }
-    printf("\n");
-}
-
-// testing main function
-int main()
-{
-    struct list *list=list_create();
-    int arr[5]={1,2,3,4,5};
-    for(int i=0;i<5;i++)
-    {
-        list_insert(list,&arr[i]);
-    }
-    print_list(list);        // prints 5 4 3 2 1
-    list_reverse(list);
-    print_list(list);        // prints 1 2 3 4 5
-    return 0;
+    printf("NULL\n");
 }
